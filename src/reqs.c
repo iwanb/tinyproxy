@@ -1518,6 +1518,7 @@ void handle_connection (int fd)
             /* TODO put this into separate function and make more robust */
             char *proxy = pacparser_find_proxy(request->url, request->host);
             int port = 80;
+            proxy = safestrdup(proxy);
             log_message (LOG_INFO,
                              "Got proxy '%s' from pac file", proxy);
             if (proxy == NULL) {
