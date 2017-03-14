@@ -27,6 +27,10 @@
 
 #include "common.h"
 
+#ifdef UPSTREAM_PAC_SUPPORT
+#include "pacparser.h"
+#endif /* UPSTREAM_PAC_SUPPORT */
+
 /*
  * Even if upstream support is not compiled into tinyproxy, this
  * structure still needs to be defined.

@@ -167,6 +167,11 @@ display_usage (void)
         features++;
 #endif /* UPSTREAM_SUPPORT */
 
+#ifdef UPSTREAM_PAC_SUPPORT
+        printf ("    Upstream PAC file proxy support\n");
+        features++;
+#endif /* UPSTREAM_SUPPORT */
+
         if (0 == features)
                 printf ("    None\n");
 

@@ -109,6 +109,17 @@ if test x"$upstream_enabled" = x"yes"; then
     AC_DEFINE(UPSTREAM_SUPPORT)
 fi
 
+dnl Include support for upstream proxies using pac files?
+AH_TEMPLATE([UPSTREAM_PAC_SUPPORT],
+            [Include support for connecting to an upstream proxy using pac files.])
+TP_ARG_ENABLE(upstreampac,
+              [Enable upstream pac proxying (default is NO)],
+              no)
+if test x"$upstreampac_enabled" = x"yes"; then
+    AC_CHECK_LIB(pacparser, pacparser_find_proxy)
+    AC_DEFINE(UPSTREAM_PAC_SUPPORT)
+fi
+
 dnl Include support for reverse proxy?
 AH_TEMPLATE([REVERSE_SUPPORT],
             [Include support for reverse proxy.])
@@ -273,6 +284,11 @@ int main(void)
             AC_MSG_ERROR([Your system's regexec() function is broken.])
         fi
     fi
+fi
+
+if test x"$upstream_pac_enabled" = x"yes"; then
+    dnl Check for pacparser
+    CFLAGS="-lpacparser $CFLAGS"
 fi
 
 dnl

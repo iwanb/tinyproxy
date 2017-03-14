@@ -41,6 +41,9 @@ struct request_s {
         uint16_t port;
 
         char *path;
+#ifdef UPSTREAM_PAC_SUPPORT
+        char *url;
+#endif
 };
 
 extern void handle_connection (int fd);
