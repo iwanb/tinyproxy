@@ -61,9 +61,13 @@
 #ifdef UPSTREAM_SUPPORT
 #  define UPSTREAM_CONFIGURED() (config.upstream_list != NULL)
 #  define UPSTREAM_HOST(host) upstream_get(host, config.upstream_list)
+#  ifdef UPSTREAM_PAC_SUPPORT
+#    define UPSTREAM_PAC_CONFIGURED() (config.upstream_pac != NULL)
+#  endif
 #else
 #  define UPSTREAM_CONFIGURED() (0)
 #  define UPSTREAM_HOST(host) (NULL)
+#  define UPSTREAM_PAC_CONFIGURED() (0)
 #endif
 
 /*
@@ -132,6 +136,11 @@ static void free_request_struct (struct request_s *request)
                 safefree (request->host);
         if (request->path)
                 safefree (request->path);
+
+#ifdef UPSTREAM_PAC_SUPPORT
+        if (request->url)
+                safefree (request->url);
+#endif
 
         safefree (request);
 }
@@ -477,7 +486,11 @@ BAD_REQUEST_ERROR:
                 goto fail;
         }
 
+#ifdef UPSTREAM_PAC_SUPPORT
+        request->url = url;
+#else
         safefree (url);
+#endif
 
         return request;
 
@@ -1410,6 +1423,10 @@ void handle_connection (int fd)
         char sock_ipaddr[IP_LENGTH];
         char peer_ipaddr[IP_LENGTH];
         char peer_string[HOSTNAME_LENGTH];
+#ifdef UPSTREAM_PAC_SUPPORT
+        char *host = NULL;
+        struct upstream up;
+#endif
 
         getpeer_information (fd, peer_ipaddr, peer_string);
 
@@ -1496,7 +1513,44 @@ void handle_connection (int fd)
                 goto fail;
         }
 
+#ifdef UPSTREAM_PAC_SUPPORT
+        if (UPSTREAM_PAC_CONFIGURED () && request->url != NULL) {
+            /* TODO put this into separate function and make more robust */
+            char *proxy = pacparser_find_proxy(request->url, request->host);
+            int port = 80;
+            log_message (LOG_INFO,
+                             "Got proxy '%s' from pac file", proxy);
+            if (proxy == NULL) {
+                goto fail;
+            }
+            if (strncmp(proxy, "PROXY ", 6) == 0) {
+                char * end = strchr(proxy, ';');
+                char * portstr = strrchr(proxy, ':');
+                if (end != NULL) {
+                    *end = '\0';
+                }
+                if (portstr != NULL) {
+                    *portstr = '\0';
+                    portstr += sizeof(char);
+                    port = atoi(portstr);
+                }
+                host = safestrdup(proxy + 6*sizeof(char));
+                up.next = NULL;
+                up.domain = NULL;
+                up.host = host;
+                up.port = port;
+                up.ip = 0;
+                up.mask = 0;
+                connptr->upstream_proxy = &up;
+            }
+            /* TODO loop over proxies in case the first one does not work */
+            free(proxy);
+        } else {
+            connptr->upstream_proxy = UPSTREAM_HOST (request->host);
+        }
+#else
         connptr->upstream_proxy = UPSTREAM_HOST (request->host);
+#endif
         if (connptr->upstream_proxy != NULL) {
                 if (connect_to_upstream (connptr, request) < 0) {
                         goto fail;
@@ -1578,5 +1632,10 @@ done:
         free_request_struct (request);
         hashmap_delete (hashofheaders);
         destroy_conn (connptr);
+#ifdef UPSTREAM_PAC_SUPPORT
+        if (host != NULL) {
+            safefree(host);
+        }
+#endif
         return;
 }

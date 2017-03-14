@@ -169,6 +169,12 @@ LogLevel Info
 #Upstream some.remote.proxy:port
 
 #
+# Upstream PAC:
+#
+# Turns on upstream proxy PAC support.
+#UpstreamPac "/path/to/proxy.pac"
+
+#
 # MaxClients: This is the absolute highest number of threads which will
 # be created. In other words, only MaxClients number of clients can be
 # connected at the same time.

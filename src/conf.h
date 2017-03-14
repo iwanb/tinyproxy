@@ -65,6 +65,9 @@ struct config_s {
 #ifdef UPSTREAM_SUPPORT
         struct upstream *upstream_list;
 #endif                          /* UPSTREAM_SUPPORT */
+#ifdef UPSTREAM_PAC_SUPPORT
+        char *upstream_pac;
+#endif                          /* UPSTREAM_PAC_SUPPORT */
         char *pidpath;
         unsigned int idletimeout;
         char *bind_address;

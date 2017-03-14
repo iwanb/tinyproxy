@@ -53,6 +53,9 @@ Allows Tinyproxy to filter out certain domains and URLs.
 - `--enable-upstream`: 
 Enable support for proxying connections through another proxy server.
 
+- `--enable-upstreampac`: 
+With --enable-upstream, support getting the proxy from a PAC file.
+
 - `--enable-transparent`: 
 Allow Tinyproxy to be used as a transparent proxy daemon.
 

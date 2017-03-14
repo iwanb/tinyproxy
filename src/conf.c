@@ -163,6 +163,10 @@ static HANDLE_FUNC (handle_upstream);
 static HANDLE_FUNC (handle_upstream_no);
 #endif
 
+#ifdef UPSTREAM_PAC_SUPPORT
+static HANDLE_FUNC (handle_upstreampac);
+#endif
+
 static void config_free_regex (void);
 
 /*
@@ -258,6 +262,9 @@ struct {
                       ")?" END, handle_upstream, NULL
         },
 #endif
+#ifdef UPSTREAM_PAC_SUPPORT
+        STDCONF ("upstreampac", STR, handle_upstreampac),
+#endif
         /* loglevel */
         STDCONF ("loglevel", "(critical|error|warning|notice|connect|info)",
                  handle_loglevel)
@@ -299,6 +306,12 @@ static void free_config (struct config_s *conf)
 #ifdef UPSTREAM_SUPPORT
         free_upstream_list (conf->upstream_list);
 #endif                          /* UPSTREAM_SUPPORT */
+#ifdef UPSTREAM_PAC_SUPPORT
+        if (conf->upstream_pac) {
+            pacparser_cleanup();
+        }
+        safefree (conf->upstream_pac);
+#endif                          /* UPSTREAM_PAC_SUPPORT */
         safefree (conf->pidpath);
         safefree (conf->bind_address);
         safefree (conf->via_proxy_name);
@@ -506,6 +519,12 @@ static void initialize_with_defaults (struct config_s *conf,
 #ifdef UPSTREAM_SUPPORT
         /* struct upstream *upstream_list; */
 #endif                          /* UPSTREAM_SUPPORT */
+
+#ifdef UPSTREAM_PAC_SUPPORT
+        if (defaults->upstream_pac) {
+                conf->upstream_pac = safestrdup (defaults->upstream_pac);
+        }
+#endif                          /* UPSTREAM_PAC_SUPPORT */
 
         if (defaults->pidpath) {
                 conf->pidpath = safestrdup (defaults->pidpath);
@@ -1108,5 +1127,28 @@ static HANDLE_FUNC (handle_upstream_no)
         safefree (domain);
 
         return 0;
+}
+#endif
+
+#ifdef UPSTREAM_PAC_SUPPORT
+static HANDLE_FUNC (handle_upstreampac)
+{
+    int r = set_string_arg (&conf->upstream_pac, line, &match[2]);
+
+    if (r)
+            return r;
+    if (pacparser_init() != 1) {
+        log_message (LOG_ERR,
+                 "Could not initialize pacparser");
+        return 1;
+    }
+    if (pacparser_parse_pac_file(conf->upstream_pac) != 1) {
+        log_message (LOG_ERR,
+                 "Could not parse PAC file %s", conf->upstream_pac);
+        return 1;
+    }
+    log_message (LOG_INFO,
+                 "Using PAC file %s", conf->upstream_pac);
+    return 0;
 }
 #endif
